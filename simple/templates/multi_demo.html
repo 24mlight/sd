@@ -1,0 +1,343 @@
+{% load static %}
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <title>stable diffusion multi user</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.0/jquery-ui.min.js"></script>
+    <!-- 引入Fancybox库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://code.jquery.com/ui/1.13.0/themes/smoothness/jquery-ui.css"
+    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.css" />
+    <script>
+      let disable_btn = false;
+      $(document).ready(function () {
+        $("#prompt").keypress(function (event) {
+          if (event.keyCode === 13 && !disable_btn) {
+            event.preventDefault();
+            generate();
+          }
+        });
+      });
+    </script>
+    
+    <style>
+      body {
+        background-color: #212121;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 50vh;
+        margin: 0;
+      }
+
+      .page-element {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        margin: 0 auto;
+        font-family: Arial, sans-serif;
+        /* text-align: left; */
+      }
+
+      #input-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 10px;
+        /* margin-top: 10px; */
+      }
+      .input_text {
+        width: 360px;
+        height: 110px;
+        border-style: double;
+        margin-top: 20px;
+        margin-bottom: 10px;
+        font-size: 15px;
+        color: rgb(133, 138, 138);
+        display: inline-block;
+        background-color: #424242;
+        border-color: #f5f5f5;
+        padding: 10px;
+        line-height: 1.5;
+        resize: none;
+      }
+
+      .submit-btn,
+      .submit-btn1,
+      .submit-btn2 {
+        background-color: rgb(12, 137, 246);
+        color: white;
+        font-weight: bold;
+        border: none;
+        border-radius: 5px;
+        padding: 10px 20px;
+        cursor: pointer;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        display: block;
+        margin: 20px auto;
+      }
+
+      .submit-btn:hover {
+        background-color: #0069d9;
+      }
+
+      #image-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        padding-top: 2%;
+        max-width: 360px;
+      }
+
+      .tab {
+        display: none;
+      }
+      .tab-btn {
+        cursor: pointer;
+        padding: 10px;
+        border: 1px solid #ccc;
+        background-color: #f1f1f1;
+        margin-right: 5px;
+      }
+      .tab-btn:hover {
+        background-color: #ddd;
+      }
+      .img-box {
+        width: 512px;
+        height: 512px;
+        border: 2px dashed #ccc; <!--dashed: 虚线-->
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        display: inline-block;
+        vertical-align: top;
+        margin-right: 10px;
+        transform: scale(0.8);
+        
+      }
+      .container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .img-wrapper {
+        margin: 0 10px;
+        position: relative;
+        display: flex;
+      }
+      .img-label {
+        position: absolute;
+        top: -20px;
+        left: 0;
+      }
+      .button-container {
+        display: flex;
+      }
+      .active {
+        background-color: #fff;
+        border-bottom: none;
+      }
+      
+      .drop-text {
+        text-align: center;
+      }
+
+      .content-wrapper {
+          display: flex;
+          flex-direction: column;
+      }
+      .input_text {
+        margin: 0 10px
+        display: flex;
+        flex-direction: row;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="button-container">
+      <button class="tab-btn"  onclick="openTab('txt2img')" data-tab="txt2img">txt2img</button>
+      <button class="tab-btn"  onclick="openTab('img2img')" data-tab="img2img">img2img</button>
+    </div>
+
+    <div class="page-element">
+      <h1>Multi-User SD demo</h1>
+      <div id="txt2img" class="tab">
+        <div id="input-box">
+          <label for="model">choose model(you can leave it empty):</label>
+          <label for="sd_model" class="drop-text">sd_model name</label>
+          <input id="sd_model" type="text" ></input>
+          <label for="vae_file" class="drop-text">vae_file name</label>
+          <input id="vae_file" type="text" ></input> 
+          
+          <textarea
+            type="text"
+            id="prompt"
+            class="input_text"
+            placeholder="please input english prompt"
+          ></textarea>
+          <button onclick="generate()" class="submit-btn" autocomplete="false">
+            generate
+          </button>
+          <button
+            onclick="generate_fallbck()"
+            class="submit-btn"
+            autocomplete="false"
+          >
+            generate with fallback
+          </button>
+        </div>
+        <div id="image-container"></div>
+        <div id="list-model">
+          <button onclick="listmodel()" class="submit-btn1" autocomplete="false">
+            get model list
+          </button>
+        </div>
+        <div id="model-name"></div>
+        <div id="progress">
+          <button onclick="progress()" class="submit-btn2" autocomplete="false">
+            check progress
+          </button>
+          <div id="pg"></div>
+          <div id="eta"></div>
+        </div>
+      </div> 
+
+      <div id="img2img" class="tab">
+        <div class="container">
+          <div class="img-wrapper">
+            <label for="img-1" class="img-label">origin img:</label>
+            <div class="content-wrapper">
+              <div id="img-1" class="img-box">
+                <label for="file-input" class="drop-text">Click or drop image here</label>
+                <input type="file" id="file-input" accept="image/*" style="vertical-align: top; display:none;">
+              </div>
+              <div>
+                <textarea
+                id="prompt-2"
+                class="input_text"
+                placeholder="please input english prompt"
+                ></textarea>
+              </div>
+            </div>
+
+            <script>
+              const imgBox = document.getElementById('img-1');
+              const fileInput = document.getElementById('file-input');
+
+              // 点击事件监听
+              imgBox.addEventListener('click', () => {
+                fileInput.click();
+              });
+              
+              // 阻止默认拖拽行为
+              ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                imgBox.addEventListener(eventName, preventDefaults, false);
+              });
+
+              function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+              }
+
+              // 拖拽进入和离开时改变边框样式
+              ['dragenter', 'dragover'].forEach(eventName => {
+                imgBox.addEventListener(eventName, highlight, false);
+              });
+              ['dragleave', 'drop'].forEach(eventName => {
+                imgBox.addEventListener(eventName, unhighlight, false);
+              });
+
+              function highlight() {
+                imgBox.style.borderColor = 'lime';
+              }
+              function unhighlight() {
+                imgBox.style.borderColor = '#ccc';
+              }
+
+              // 处理文件拖拽上传
+              imgBox.addEventListener('drop', handleDrop, false);
+
+              function handleDrop(e) {
+                const file = e.dataTransfer.files[0];
+
+                // 确保文件类型为图像
+                if (file.type.startsWith('image/')) {
+                  handleImageUpload(file);
+                } else {
+                  alert('请选择图像文件');
+                }
+              }
+              
+              // 文件选择事件监听
+              fileInput.addEventListener('change', (e) => {
+                e.preventDefault();
+                handleImageUpload(e.target.files[0]);
+              });
+
+              function handleImageUpload(file) {
+                if (!file || !file.type.startsWith('image/')) {
+                  alert('Please upload an image file.');
+                  return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                  const width = imgBox.offsetWidth;
+                  const height = imgBox.offsetHeight;
+
+                  imgBox.innerHTML = `<img src="${e.target.result}" alt="Uploaded Image" style="width: ${width}px; height: ${height}px; object-fit: cover; ">`;
+                  // 将 base64 数据存储到隐藏的 input 元素中
+                  //document.getElementById('file-input').value = e.target.result;
+                };
+
+                reader.readAsDataURL(file);
+              }
+            </script>
+          </div>
+
+          <div class="img-wrapper">
+            <label for="img-2" class="img-label" >produced img:</label>
+            <div id="img-2" class="img-box" >
+            </div>
+          </div>
+        </div>
+
+        <button onclick="generate()" class="submit-btn" autocomplete="false">
+          generate
+        </button>
+        
+        <div id="image-container-2"></div>
+
+        <div id="list-model">
+          <button onclick="listmodel()" class="submit-btn1" autocomplete="false">
+            get model list
+          </button>
+        </div>
+        <div id="model-name"></div>
+        <div id="progress">
+          <button onclick="progress()" class="submit-btn2" autocomplete="false">
+            check progress
+          </button>
+          <div id="pg"></div>
+          <div id="eta"></div>
+        </div>
+      </div> 
+
+    </div>
+    
+    <script src="{% static 'js/sd.js' %}"></script> 
+  </body>
+</html>
